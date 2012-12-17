@@ -1,10 +1,11 @@
 CPPFLAGS += -Iext -Wall -pthread
-
-
 all: jsonhw
+
+clean: 
+	rm -f *.o jsonhw *~
 
 mongoose.o: ext/mongoose.c
 	gcc $(CPPFLAGS) -c $< -o $@
 
-jsonhw: jsonhw.o mongoose.o
-	g++ jsonhw.o mongoose.o -o $@ -ldl -pthread
+jsonhw: jsonhw.o jsonhelpers.o mongoose.o
+	g++ jsonhw.o jsonhelpers.o mongoose.o -o $@ -ldl -pthread
