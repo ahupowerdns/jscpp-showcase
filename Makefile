@@ -1,5 +1,7 @@
-CPPFLAGS += -Iext -Wall -pthread
+CPPFLAGS += -MMD -Iext -Wall -pthread 
 all: jsonhw
+
+-include *.d
 
 clean: 
 	rm -f *.o jsonhw *~
