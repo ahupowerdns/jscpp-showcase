@@ -1,34 +1,38 @@
 <html>                                                                  
 <head>                                                                  
-	<script type="text/javascript" src="js/jquery-1.8.3.min.js"></script>          
-	<script type="text/javascript" src="js/underscore-min.js"></script>          
-	<script type="text/javascript">                                         
+<style type="text/css">
+body {
+	font-family: Verdana,Arial,Helvetica,sans-serif;
+	font-size: 12px;
+	margin: 1.2em;
+}
+</style>
+<script src="js/jquery-1.8.3.min.js"></script>          
+<script src="js/underscore-min.js"></script>          
+<script src="js/jsrender.js"></script>
+<script type="text/javascript">                                         
+
 $(document).ready(function() {
 	$.getJSON("/interfaces", 
 		function(data) {
-			_.each(data["interfaces"], function(interface) {
-				var ret= [interface["name"]];
-				_.each(interface["addresses"], function(address) { ret.push(address); });
-				var row = "<tr>";
-				_.each(ret, function(field) {
-					row +=("<td>"+field+"</td>");
-				});
-				row += ("</tr>");
-				$("#interfaces").append(row);
-			
-			});
-	
-			
+			console.log(data["interfaces"]);
+			$("#interfaces").html($("#interfaceTemplate").render(data["interfaces"]));
 		});
 });
      
-	</script>                                                               
+</script> 
+<script id="interfaceTemplate" type="text/x-jsrender">
+<tr>
+	<td>{{>name}}</td><td>{{>Hardware}}</td><td>{{>IPv4}}</td><td>{{>IPv6}}</td>
+</tr>
+</script>
 </head>                                                                 
+
 <body>                                                                  
-<!-- we will add our HTML content here -->       
 <table border=1>
-<thead><th>Name</th><th>Addresses..</th></thead>
-<tbody id="interfaces"></tbody>
+<thead><th>Name</th><th>Hardware</th><th>IPv4</th><th>IPv6</th></thead>
+<tbody id="interfaces">
+</tbody>
 </table>
 </body>                                                                 
 </html>

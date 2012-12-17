@@ -27,11 +27,10 @@ static void *callback(enum mg_event event,
       perror("getifaddrs");
       exit(EXIT_FAILURE);
     }
-    typedef map<string, vector<jsonitem_t> > interfaces_t;
+    typedef map<string, map<string,string> > interfaces_t;
     interfaces_t interfaces;
     
     for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-      interfaces[ifa->ifa_name]; // populate
       if (ifa->ifa_addr == NULL)
         continue;
         
@@ -45,7 +44,7 @@ static void *callback(enum mg_event event,
            printf("getnameinfo() failed: %s\n", gai_strerror(s));
            exit(EXIT_FAILURE);
         }
-        interfaces[ifa->ifa_name].push_back(host);
+        interfaces[ifa->ifa_name][family == AF_INET ? "IPv4" : "IPv6"]=host;
       }
       else if(family == AF_PACKET) {
         boost::format macfmt("%02x:%02x:%02x:%02x:%02x:%02x");
@@ -55,21 +54,22 @@ static void *callback(enum mg_event event,
         for(int n=0; n < 6; ++n)
           macfmt % (int)ptr[n];
           
-        interfaces[ifa->ifa_name].push_back(macfmt.str());
+        interfaces[ifa->ifa_name]["Hardware"]=macfmt.str();
       }
     }
-    
-    map<string, jsonitem_t> root;
-    root["hi"]=string("there");
-    
-    vector<jsonitem_t> intervec;
+    freeifaddrs(ifaddr);
+    jsonvectoritem ifvec;
     BOOST_FOREACH(const interfaces_t::value_type& val, interfaces) {
-      map<string, jsonitem_t> interface;
-      interface["name"] = val.first;
-      interface["addresses"] = val.second;
-      intervec.push_back(interface);
+      jsonmapitem jmi;
+      jmi.inner["name"]=val.first;
+      typedef map<string, string> map_t;
+      BOOST_FOREACH(const map_t::value_type& ival, val.second) {
+        jmi.inner[ival.first]=ival.second;
+      }
+      ifvec.inner.push_back(jmi);
     }
-    root["interfaces"]=intervec; 
+    map<string, jsonitem_t> root;
+    root["interfaces"]=ifvec;
     
     string resp=pt2string(root);
     
