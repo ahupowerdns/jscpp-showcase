@@ -89,6 +89,7 @@ string getRusage(struct mg_connection*)
   getru(oublock);
   getru(nvcsw);
   getru(nivcsw);
+#undef getru
   root["rusage"] = jmi;
   return pt2string(root);
 }
@@ -113,7 +114,7 @@ static void *callback(enum mg_event event,
   if(!resp.empty()) {
     mg_printf(conn,
               "HTTP/1.1 200 OK\r\n"
-              "Content-Type: text/plain\r\n"
+              "Content-Type: application/json\r\n"
               "Content-Length: %ld\r\n"        // Always set Content-Length
               "\r\n"
               "%s",
