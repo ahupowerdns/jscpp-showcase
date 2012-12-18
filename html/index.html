@@ -13,26 +13,67 @@ body {
 <script type="text/javascript">                                         
 
 $(document).ready(function() {
+
+function showStuff() {
 	$.getJSON("/interfaces", 
 		function(data) {
 			console.log(data["interfaces"]);
 			$("#interfaces").html($("#interfaceTemplate").render(data["interfaces"]));
 		});
+
+	$.getJSON("/rusage", 
+		function(data) {
+			console.log(data["rusage"]);
+			var pairs=[];
+			_.map(data["rusage"], function(value, key) {
+				console.log(key);
+				console.log(value);
+				var tmp={};
+				tmp["key"]=key;
+				tmp["value"]=value;
+				pairs.push(tmp);
+			});
+			console.log(pairs);
+			$("#rusage").html($("#rusageTemplate").render(pairs));
+		});
+};
+
+showStuff();
+setInterval(showStuff, 1000);
+
 });
      
 </script> 
+
 <script id="interfaceTemplate" type="text/x-jsrender">
 <tr>
 	<td>{{>name}}</td><td>{{>Hardware}}</td><td>{{>IPv4}}</td><td>{{>IPv6}}</td>
 </tr>
 </script>
-</head>                                                                 
 
+
+<script id="rusageTemplate" type="text/x-jsrender">
+<tr>
+	<td>{{>key}}</td><td>{{>value}}</td>
+</tr>
+</script>
+
+</head>  
+                                                               
 <body>                                                                  
+
 <table border=1>
 <thead><th>Name</th><th>Hardware</th><th>IPv4</th><th>IPv6</th></thead>
 <tbody id="interfaces">
 </tbody>
 </table>
+<p>
+<table border=1>
+<thead><th>Name</th><th>Value</th></thead>
+<tbody id="rusage">
+</tbody>
+</table>
+
+
 </body>                                                                 
 </html>
