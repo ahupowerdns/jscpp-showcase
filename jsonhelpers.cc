@@ -15,6 +15,9 @@ ptree json2pt(const jsonitem_t& input)
   }
   else if(const long* l = boost::get<long>(&input)) {
     pt.put("", boost::lexical_cast<string>(*l));
+  }
+  else if(const unsigned long* ul = boost::get<unsigned long>(&input)) {
+    pt.put("", boost::lexical_cast<string>(*ul));
   } 
   else if(const double* d = boost::get<double>(&input)) {
     pt.put("", boost::lexical_cast<string>(*d));

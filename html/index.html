@@ -1,40 +1,76 @@
-<html>                                                                  
+<!DOCTYPE html>
+<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
+<!--[if lt IE 7]> <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js lt-ie9 lt-ie8" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js lt-ie9" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
 <head>                                                                  
-<style type="text/css">
-body {
-	font-family: Verdana,Arial,Helvetica,sans-serif;
-	font-size: 12px;
-	margin: 1.2em;
-}
-</style>
-<script src="js/jquery-1.8.3.min.js"></script>          
+<meta charset="utf-8" />
+
+  <!-- Set the viewport width to device width for mobile -->
+<meta name="viewport" content="width=device-width" />
+<link rel="stylesheet" href="foundation/stylesheets/foundation.min.css">
+<link rel="stylesheet" href="foundation/stylesheets/app.css">
+
+<script src="js/jquery-1.8.3.min.js"></script>        
+<script src="foundation/javascripts/foundation.min.js"></script>   
 <script src="js/underscore-min.js"></script>          
 <script src="js/jsrender.js"></script>
+<script src="js/moment.min.js"></script>
+<script src="foundation/javascripts/modernizr.foundation.js"></script>
+
+
 <script type="text/javascript">                                         
+
+function getReadableSizeString(fileSizeInBytes) {
+	var i = -1;
+        var byteUnits = [' kB', ' MB', ' GB', ' TB', 'PB', 'EB', 'ZB', 'YB'];
+	do {
+        	fileSizeInBytes = fileSizeInBytes / 1024;
+                i++;
+        } while (fileSizeInBytes > 1024);
+                                
+        return Math.max(fileSizeInBytes, 0.1).toFixed(1) + byteUnits[i];
+};
 
 $(document).ready(function() {
 
 function showStuff() {
 	$.getJSON("/interfaces", 
 		function(data) {
-			console.log(data["interfaces"]);
 			$("#interfaces").html($("#interfaceTemplate").render(data["interfaces"]));
 		});
 
+	$.getJSON("/timeofday", 
+		function(data) {
+			console.log(data);
+			var theirtime = moment(1000*data["timeval"]["sec"] + data.timeval.usec/1000);
+			
+			$("#timeofday").html("<pre>Server time is: "+theirtime.format()	+"</pre><br><pre>Your time is:   "+moment().format()+"</pre>");
+		});
+
+
 	$.getJSON("/rusage", 
 		function(data) {
-			console.log(data["rusage"]);
 			var pairs=[];
 			_.map(data["rusage"], function(value, key) {
-				console.log(key);
-				console.log(value);
 				var tmp={};
 				tmp["key"]=key;
 				tmp["value"]=value;
 				pairs.push(tmp);
 			});
-			console.log(pairs);
 			$("#rusage").html($("#rusageTemplate").render(pairs));
+		});
+	$.getJSON("/disk-free", 
+		function(data) {
+			var percent=(data["disk-free"].total - data["disk-free"].free)*100/data["disk-free"].total
+			$("#disk-full-bar").width(percent+'%');
+			$("#disk-full-percentage").text(percent.toFixed(2)+'%');
+			
+			percent = (data["disk-free"].inodes - data["disk-free"]["inodes-free"])*100.0/data["disk-free"].inodes;
+			$("#inodes-full-bar").width(percent+'%');
+			$("#inodes-full-percentage").text(percent.toFixed(2)+'%');
+			
 		});
 };
 
@@ -47,7 +83,8 @@ setInterval(showStuff, 1000);
 
 <script id="interfaceTemplate" type="text/x-jsrender">
 <tr>
-	<td>{{>name}}</td><td>{{>Hardware}}</td><td>{{>IPv4}}</td><td>{{>IPv6}}</td>
+	<td>{{>name}}</td><td>{{>Hardware}}</td><td>{{>IPv4}}</td><td>{{>IPv6}}</td><td>{{>tx_packets}}</td><td>{{>rx_packets}}</td>
+	<td>{{>tx_bytes}}</td><td>{{>rx_bytes}}</td>
 </tr>
 </script>
 
@@ -61,19 +98,41 @@ setInterval(showStuff, 1000);
 </head>  
                                                                
 <body>                                                                  
+<div class="row"><div class="twelve columns">
+<h2>Welcome to the JavaScript/C++ Small Tour!</h2>
 
-<table border=1>
-<thead><th>Name</th><th>Hardware</th><th>IPv4</th><th>IPv6</th></thead>
+Here you can find two tables, one listing all network interfaces and their
+primary addresses, the other one showing the resource usage of our C++
+application.
+<hr/>
+</div></div>
+
+<div class="row"><div class="twelve columns">
+<span class="radius label">Interfaces</span>
+<table class="twelve">
+<thead><th>Name</th><th>Hardware</th><th>IPv4</th><th>IPv6</th><th>RX packets</th><th>TX Packets</th><th>RX bytes</th><th>TX bytes</th></thead>
 <tbody id="interfaces">
 </tbody>
 </table>
-<p>
-<table border=1>
+</div></div>
+
+<div class="row"><div class="six columns">
+<span class="radius label">Storage</span>
+<table class="twelve">
+<tr><td class="two">Disk used</td><td class="one"><span id="disk-full-percentage"></span></td><td class="nine"><div class="progress alert twelve"><span class="meter" id="disk-full-bar"></span></div></td></tr>
+<tr><td class="two">Inodes used</td><td class="one"><span id="inodes-full-percentage"></span></td><td class="nine"><div class="progress twelve"><span class="meter" id="inodes-full-bar"></span></div></td></tr>
+</table>
+<span id="timeofday"></span>
+</div>
+<div class="six columns">
+<span class="radius label">Resources</span>
+<table class="twelve">
 <thead><th>Name</th><th>Value</th></thead>
 <tbody id="rusage">
 </tbody>
 </table>
 
+</div></div>
 
 </body>                                                                 
 </html>

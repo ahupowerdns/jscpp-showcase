@@ -1,4 +1,4 @@
-CPPFLAGS += -MMD -Iext -Wall -pthread 
+CPPFLAGS += -MMD -Iext -Wall -pthread
 all: jsonhw
 
 -include *.d

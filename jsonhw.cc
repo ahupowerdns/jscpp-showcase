@@ -10,9 +10,21 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <boost/lexical_cast.hpp>
-
+#include <sys/statvfs.h>
+#include <boost/algorithm/string.hpp>
 using namespace std;
 using boost::lexical_cast;
+
+unsigned long getNetStat(const std::string& ifname, const std::string& metric)
+{
+  ifstream ifs(string("/sys/class/net/"+ifname+"/statistics/"+metric).c_str());
+  if(!ifs)
+    return 0;
+  string line;
+  getline(ifs, line);
+  boost::trim_right(line);
+  return lexical_cast<unsigned long>(line.c_str());
+}
 
 string getInterfaces(mg_connection* conn)
 {
@@ -60,6 +72,10 @@ string getInterfaces(mg_connection* conn)
     BOOST_FOREACH(const interfaces_t::value_type& val, interfaces) {
       jsonmapitem jmi;
       jmi["name"]=val.first;
+      jmi["tx_packets"]=getNetStat(val.first, "tx_packets");
+      jmi["rx_packets"]=getNetStat(val.first, "rx_packets");
+      jmi["tx_bytes"]=getNetStat(val.first, "tx_bytes");
+      jmi["rx_bytes"]=getNetStat(val.first, "rx_bytes");
       typedef map<string, string> map_t;
       BOOST_FOREACH(const map_t::value_type& ival, val.second) {
         jmi[ival.first]=ival.second;
@@ -94,6 +110,31 @@ string getRusage(struct mg_connection*)
   return pt2string(root);
 }
 
+string getDiskFree(struct mg_connection*) 
+{
+  struct statvfs buf;
+  statvfs(".", &buf);
+  jsonmapitem root, b;
+  b["total"]=buf.f_bsize * buf.f_blocks;
+  b["free"]=buf.f_bsize * buf.f_bfree;
+  b["available-non-root"]=buf.f_bsize * buf.f_bavail;
+  b["inodes"]=buf.f_files;
+  b["inodes-free"]=buf.f_ffree;
+  root["disk-free"]=b;
+  return pt2string(root);
+}
+
+string getTimeOfDay(struct mg_connection*) 
+{
+  struct timeval tv;
+  gettimeofday(&tv, 0);
+  jsonmapitem root, t;
+  t["sec"]=tv.tv_sec;
+  t["usec"]=tv.tv_usec;
+  root["timeval"]=t;
+  return pt2string(root);
+}
+
 static void *callback(enum mg_event event,
                       struct mg_connection *conn) 
 {
@@ -110,6 +151,11 @@ static void *callback(enum mg_event event,
   } else if(uri == "/rusage") {
     resp = getRusage(conn);
   } 
+  else if(uri == "/timeofday") {
+    resp = getTimeOfDay(conn);
+  }else if(uri == "/disk-free") {
+    resp = getDiskFree(conn);
+  }
     
   if(!resp.empty()) {
     mg_printf(conn,
@@ -132,6 +178,7 @@ int main()
   struct mg_context *ctx;
   const char *options[] = {"listening_ports", "8080", 
                            "document_root", "./html", 
+                           "enable_keep_alive", "yes",
                            NULL};
 
   ctx = mg_start(&callback, NULL, options);

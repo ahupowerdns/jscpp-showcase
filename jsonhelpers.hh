@@ -12,7 +12,7 @@
 
 struct jsonmapitem;
 struct jsonvectoritem;
-typedef boost::variant<boost::recursive_wrapper<jsonmapitem> , std::string, long, double, boost::recursive_wrapper<jsonvectoritem> > jsonitem_t;
+typedef boost::variant<boost::recursive_wrapper<jsonmapitem> , std::string, long, unsigned long, double, boost::recursive_wrapper<jsonvectoritem> > jsonitem_t;
 using  boost::property_tree::ptree;
 
 struct jsonmapitem
