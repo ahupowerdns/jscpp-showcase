@@ -12,7 +12,7 @@
 
 struct jsonmapitem;
 struct jsonvectoritem;
-typedef boost::variant<boost::recursive_wrapper<jsonmapitem> , std::string, boost::recursive_wrapper<jsonvectoritem> > jsonitem_t;
+typedef boost::variant<boost::recursive_wrapper<jsonmapitem> , std::string, long, double, boost::recursive_wrapper<jsonvectoritem> > jsonitem_t;
 using  boost::property_tree::ptree;
 
 struct jsonmapitem
@@ -20,46 +20,14 @@ struct jsonmapitem
   jsonmapitem(){}
   jsonmapitem(const std::map<std::string, jsonitem_t>& in) : inner(in){}
   std::map<std::string, jsonitem_t> inner;
+  jsonitem_t& operator[](const std::string& lookup) { return inner[lookup]; }
 };
 struct jsonvectoritem
 {
   jsonvectoritem(){}
   jsonvectoritem(const std::vector<jsonitem_t>& in) : inner(in){}
   std::vector<jsonitem_t> inner;
-};
-
-class jsonitem_visitor : public boost::static_visitor<ptree>
-{
-public:
-    jsonitem_visitor(ptree& pt) : d_pt(pt) {}
-    
-    ptree operator()(const std::string & str)
-    {
-      d_pt.push_back(make_pair("", str));
-      return d_pt;
-    }
-    ptree operator()(const jsonmapitem& sub) 
-    {
-      for(std::map<std::string, jsonitem_t>::const_iterator iter = sub.inner.begin(); iter != sub.inner.end() ; ++ iter) {
-        jsonitem_visitor jv(d_pt);
-        d_pt.push_back(make_pair(iter->first, apply_visitor(jv, iter->second)));
-      }
-      
-      return d_pt;
-    }
-    
-    ptree operator()(const jsonvectoritem& vec) 
-    {
-      ptree vectree;
-      BOOST_FOREACH(const jsonitem_t& val, vec.inner) {
-        jsonitem_visitor jv(vectree);
-        vectree.push_back(make_pair("", apply_visitor(jv, val)));
-      }
-      return d_pt;
-    }
-private:
-    ptree& d_pt;
-    
+  void push_back(const jsonitem_t& ji) { inner.push_back(ji); }
 };
 
 std::string pt2string(const jsonitem_t& input);

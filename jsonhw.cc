@@ -7,19 +7,16 @@
 #include <netdb.h>
 #include <ifaddrs.h>
 #include "jsonhelpers.hh"
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <boost/lexical_cast.hpp>
 
 using namespace std;
+using boost::lexical_cast;
 
-static void *callback(enum mg_event event,
-                      struct mg_connection *conn) 
+string getInterfaces(mg_connection* conn)
 {
-  const struct mg_request_info *request_info = mg_get_request_info(conn);
-  
-  if (event != MG_NEW_REQUEST)
-    return 0;
-    
-  if(strcmp(request_info->uri, "/interfaces")==0) {
-    struct ifaddrs *ifaddr, *ifa;
+  struct ifaddrs *ifaddr, *ifa;
     int family, s;
     char host[NI_MAXHOST];
 
@@ -58,21 +55,62 @@ static void *callback(enum mg_event event,
       }
     }
     freeifaddrs(ifaddr);
+    
     jsonvectoritem ifvec;
     BOOST_FOREACH(const interfaces_t::value_type& val, interfaces) {
       jsonmapitem jmi;
-      jmi.inner["name"]=val.first;
+      jmi["name"]=val.first;
       typedef map<string, string> map_t;
       BOOST_FOREACH(const map_t::value_type& ival, val.second) {
-        jmi.inner[ival.first]=ival.second;
+        jmi[ival.first]=ival.second;
       }
-      ifvec.inner.push_back(jmi);
+      ifvec.push_back(jmi);
     }
     map<string, jsonitem_t> root;
     root["interfaces"]=ifvec;
+    return pt2string(root);
     
-    string resp=pt2string(root);
     
+}
+
+string getRusage(struct mg_connection*)
+{
+  struct rusage ru;
+  
+  getrusage(RUSAGE_SELF, &ru);
+  jsonmapitem jmi, root;
+  jmi["utime"] = ru.ru_utime.tv_sec*1000.0 + ru.ru_utime.tv_usec/1000.0;
+  jmi["stime"] = ru.ru_stime.tv_sec*1000.0 + ru.ru_stime.tv_usec/1000.0;
+#define getru(x) jmi[#x] = ru.ru_##x;
+  getru(maxrss);
+  getru(minflt);
+  getru(majflt);
+  getru(inblock);
+  getru(oublock);
+  getru(nvcsw);
+  getru(nivcsw);
+  root["rusage"] = jmi;
+  return pt2string(root);
+}
+
+static void *callback(enum mg_event event,
+                      struct mg_connection *conn) 
+{
+  const struct mg_request_info *request_info = mg_get_request_info(conn);
+  
+  if (event != MG_NEW_REQUEST)
+    return 0;
+    
+  string resp;
+  string uri = request_info->uri;
+  
+  if(uri == "/interfaces") {
+    resp = getInterfaces(conn);
+  } else if(uri == "/rusage") {
+    resp = getRusage(conn);
+  } 
+    
+  if(!resp.empty()) {
     mg_printf(conn,
               "HTTP/1.1 200 OK\r\n"
               "Content-Type: text/plain\r\n"
