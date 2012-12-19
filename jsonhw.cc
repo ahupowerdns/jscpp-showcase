@@ -12,6 +12,9 @@
 #include <boost/lexical_cast.hpp>
 #include <sys/statvfs.h>
 #include <boost/algorithm/string.hpp>
+#include <boost/assign/list_inserter.hpp> 
+#include <boost/function.hpp>
+
 #include <fstream>
 using namespace std;
 using boost::lexical_cast;
@@ -136,6 +139,9 @@ string getTimeOfDay(struct mg_connection*)
   return pt2string(root);
 }
 
+typedef boost::function<string(struct mg_connection*)> handler_t;
+map<string, handler_t> g_uris;
+
 static void *callback(enum mg_event event,
                       struct mg_connection *conn) 
 {
@@ -144,21 +150,10 @@ static void *callback(enum mg_event event,
   if (event != MG_NEW_REQUEST)
     return 0;
     
-  string resp;
-  string uri = request_info->uri;
   
-  if(uri == "/interfaces") {
-    resp = getInterfaces(conn);
-  } else if(uri == "/rusage") {
-    resp = getRusage(conn);
-  } 
-  else if(uri == "/timeofday") {
-    resp = getTimeOfDay(conn);
-  }else if(uri == "/disk-free") {
-    resp = getDiskFree(conn);
-  }
-    
-  if(!resp.empty()) {
+  handler_t todo = g_uris[request_info->uri];
+  if(todo) {
+    string resp = todo(conn);
     mg_printf(conn,
               "HTTP/1.1 200 OK\r\n"
               "Content-Type: application/json\r\n"
@@ -175,7 +170,11 @@ static void *callback(enum mg_event event,
 
 
 int main()
-{
+{    
+  boost::assign::insert(g_uris)    ("/interfaces", getInterfaces) 
+	    ("/rusage", getRusage) ("/timeofday", getTimeOfDay)
+	    ("/disk-free", getDiskFree);
+
   struct mg_context *ctx;
   const char *options[] = {"listening_ports", "8080", 
                            "document_root", "./html", 
@@ -183,6 +182,7 @@ int main()
                            "num_threads", "20",
                            NULL};
 
+  cout<<"Launching webserver on 0.0.0.0:8080"<<endl;
   ctx = mg_start(&callback, NULL, options);
   if(!ctx) {
     throw runtime_error("Could not start webserver!");
