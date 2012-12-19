@@ -13,18 +13,18 @@ ptree json2pt(const jsonitem_t& input)
   if(const string* str = boost::get<string>(&input)) {
     pt.put("", *str);
   }
-  else if(const int32_t* l = boost::get<int32_t>(&input)) {
-    pt.put("", boost::lexical_cast<string>(*l));
-  }
-  else if(const uint32_t* l = boost::get<uint32_t>(&input)) {
-    pt.put("", boost::lexical_cast<string>(*l));
-  }
   else if(const int64_t* l = boost::get<int64_t>(&input)) {
     pt.put("", boost::lexical_cast<string>(*l));
   }
   else if(const uint64_t* l = boost::get<uint64_t>(&input)) {
     pt.put("", boost::lexical_cast<string>(*l));
   }
+  else if(const int32_t* l = boost::get<int32_t>(&input)) {
+    pt.put("", boost::lexical_cast<string>(*l));
+  }
+  else if(const uint32_t* l = boost::get<uint32_t>(&input)) {
+    pt.put("", boost::lexical_cast<string>(*l));
+  }  
   else if(const double* d = boost::get<double>(&input)) {
     pt.put("", boost::lexical_cast<string>(*d));
   } 

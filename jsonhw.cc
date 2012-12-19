@@ -16,7 +16,7 @@
 using namespace std;
 using boost::lexical_cast;
 
-unsigned long getNetStat(const std::string& ifname, const std::string& metric)
+uint64_t getNetStat(const std::string& ifname, const std::string& metric)
 {
   ifstream ifs(string("/sys/class/net/"+ifname+"/statistics/"+metric).c_str());
   if(!ifs)
@@ -98,7 +98,7 @@ string getRusage(struct mg_connection*)
   jsonmapitem jmi, root;
   jmi["utime"] = ru.ru_utime.tv_sec*1000.0 + ru.ru_utime.tv_usec/1000.0;
   jmi["stime"] = ru.ru_stime.tv_sec*1000.0 + ru.ru_stime.tv_usec/1000.0;
-#define getru(x) jmi[#x] = ru.ru_##x;
+#define getru(x) jmi[#x] = (uint64_t)ru.ru_##x;
   getru(maxrss);
   getru(minflt);
   getru(majflt);
@@ -116,11 +116,11 @@ string getDiskFree(struct mg_connection*)
   struct statvfs buf;
   statvfs(".", &buf);
   jsonmapitem root, b;
-  b["total"]=buf.f_bsize * buf.f_blocks;
-  b["free"]=buf.f_bsize * buf.f_bfree;
-  b["available-non-root"]=buf.f_bsize * buf.f_bavail;
-  b["inodes"]=buf.f_files;
-  b["inodes-free"]=buf.f_ffree;
+  b["total"]=(uint64_t)buf.f_bsize * (uint64_t)buf.f_blocks;
+  b["free"]=(uint64_t)buf.f_bsize * (uint64_t)buf.f_bfree;
+  b["available-non-root"]=(uint64_t)buf.f_bsize * (uint64_t)buf.f_bavail;
+  b["inodes"]=(uint64_t)buf.f_files;
+  b["inodes-free"]=(uint64_t)buf.f_ffree;
   root["disk-free"]=b;
   return pt2string(root);
 }
@@ -130,8 +130,8 @@ string getTimeOfDay(struct mg_connection*)
   struct timeval tv;
   gettimeofday(&tv, 0);
   jsonmapitem root, t;
-  t["sec"]=tv.tv_sec;
-  t["usec"]=tv.tv_usec;
+  t["sec"]=(uint64_t)tv.tv_sec;
+  t["usec"]=(uint64_t)tv.tv_usec;
   root["timeval"]=t;
   return pt2string(root);
 }
@@ -162,10 +162,10 @@ static void *callback(enum mg_event event,
     mg_printf(conn,
               "HTTP/1.1 200 OK\r\n"
               "Content-Type: application/json\r\n"
-              "Content-Length: %ld\r\n"        // Always set Content-Length
+              "Content-Length: %lu\r\n"        // Always set Content-Length
               "\r\n"
               "%s",
-              resp.length(), resp.c_str());
+              (unsigned long)resp.length(), resp.c_str());
     // Mark as processed
     return (void*)"";
   } else {
@@ -180,6 +180,7 @@ int main()
   const char *options[] = {"listening_ports", "8080", 
                            "document_root", "./html", 
                            "enable_keep_alive", "yes",
+                           "num_threads", "20",
                            NULL};
 
   ctx = mg_start(&callback, NULL, options);
