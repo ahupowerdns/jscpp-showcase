@@ -12,6 +12,7 @@
 #include <boost/lexical_cast.hpp>
 #include <sys/statvfs.h>
 #include <boost/algorithm/string.hpp>
+#include <fstream>
 using namespace std;
 using boost::lexical_cast;
 
