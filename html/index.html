@@ -56,7 +56,7 @@ function showStuff() {
 			_.map(data["rusage"], function(value, key) {
 				var tmp={};
 				tmp["key"]=key;
-				tmp["value"]=value;
+				tmp["value"]=(1.0*value).toFixed(0);
 				pairs.push(tmp);
 			});
 			$("#rusage").html($("#rusageTemplate").render(pairs));
