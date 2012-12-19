@@ -21,4 +21,14 @@ This small demo project shows:
 	* How to interact with your application from JavaScript
 	* How to make this look (reasonably) good
 
+Nice book for people with a C++ background:
+	JavaScript: The Good Parts
+	http://www.amazon.com/JavaScript-Good-Parts-Douglas-Crockford/dp/0596517742
+
+Relevant links:
+
+	* http://www.jquery.com - sort of an extended libc for javascript
+	* http://underscorejs.org - even more utility functions
+	* http://momentjs.com - all the ways you'd ever want to manipulate or print a date or duration
+	* http://foundation.zurb.com - easy & pretty layout with a smart grid
 
